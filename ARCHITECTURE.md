@@ -226,16 +226,34 @@ LLM calls are **never made directly from views** — always via `LLMService`. Ev
 
 ```
 project/
-├── scenarios/           # Scenario + LearningObjective models
-├── sessions/            # Session + Message models, API views
-├── llm/                 # LLMService, ContextManager, prompt builders, parser
+├── core/                    # Shared utilities, base classes, User model
+├── frontend/                # Django TemplateViews + Tailwind/jQuery templates
+│   └── templates/frontend/
+│       ├── login.html
+│       ├── register.html
+│       ├── scenario_select.html
+│       └── chat.html
+├── learning_sessions/       # Session + Message models, API views
+│   ├── models.py
+│   ├── views.py
+│   ├── serializers.py
+│   └── urls.py
+├── llm/                     # LLMService, ContextManager, prompt builders, parser
 │   ├── client.py
 │   ├── prompt_builder.py
 │   ├── context_manager.py
 │   ├── parser.py
+│   ├── schemas.py           # Pydantic models for LLM responses
 │   └── service.py
-├── core/                # Shared utilities, base classes
+├── scenarios/               # Scenario + LearningObjective models
+│   ├── models.py
+│   ├── views.py
+│   ├── serializers.py
+│   └── management/commands/seed_scenarios.py
+└── oauth/                   # Google OAuth integration
 ```
+
+> **Note:** The app is named `learning_sessions` (not `sessions`) to avoid conflict with Django's built-in `django.contrib.sessions`.
 
 ---
 
@@ -262,10 +280,120 @@ It only knows how to read a `Scenario` record and build a prompt from it. Deploy
 
 ---
 
-## Next Steps
+## 14. Quick Start
 
-1. **Models** — `Scenario`, `LearningObjective`, `Session`, `Message`
-2. **LLM service layer** — `client.py`, `prompt_builder.py`, `context_manager.py`, `parser.py`
-3. **API views** — session creation, message endpoint
-4. **Tests** — prompt builder, parser, failure scenarios
-5. **Headroom** — Django admin for scenario authoring, streaming responses, observability logging
+```bash
+# 1. Create and activate virtual environment
+python3 -m venv env
+source env/bin/activate
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Set up environment variables
+cp .env.example .env
+# Edit .env with your ANTHROPIC_API_KEY and other settings
+
+# 4. Run migrations
+python manage.py migrate
+
+# 5. Seed the test scenario
+python manage.py seed_scenarios
+
+# 6. Create a superuser (optional, for admin access)
+python manage.py createsuperuser
+
+# 7. Run the server
+python manage.py runserver
+
+# 8. Run tests
+pytest
+```
+
+---
+
+## 15. Implementation Status
+
+| Step | Status | Notes |
+|------|--------|-------|
+| Models | ✅ Done | `Scenario`, `LearningObjective`, `Session`, `Message` |
+| LLM service layer | ✅ Done | `client.py`, `prompt_builder.py`, `context_manager.py`, `parser.py`, `service.py` |
+| API views | ✅ Done | Session CRUD, message endpoint |
+| Frontend | ✅ Done | Chat UI with Tailwind + jQuery |
+| Tests | ✅ Done | Prompt builder, parser, context manager, API endpoints |
+| Seed data | ✅ Done | Dave/Duchess veterinary scenario |
+| Django admin | ✅ Done | Basic admin for scenarios and sessions |
+
+### Headroom (Future)
+- Streaming responses
+- Async handling
+- Observability logging for LLM interactions
+- Summarization memory strategy
+- Containerisation
+
+The Test Scenario
+A final-year veterinary science student is called out to a remote property outside Armidale.
+A farmer, Dave, has called the university clinic because his prize Hereford, "Duchess," isn't
+right. She's off her feed, lethargic, and Dave's worried.
+The student (the user of your application) needs to:
+• Talk to Dave to gather information about Duchess's symptoms, history, and
+environment
+• Ask the right questions to narrow down differentials
+• Arrive at a reasonable diagnosis and propose a treatment plan
+The LLM plays Dave. He's helpful but not medically precise. He describes what he sees in
+plain language, gets a bit anxious if the student seems unsure, and occasionally throws in
+irrelevant details about his other cattle or the weather. He's a farmer, not a vet.
+
+Learning Objectives
+The learning objectives for this scenario are:
+1. Gather relevant history: Ask Dave about Duchess's feeding, water intake, recent
+changes to pasture or diet, and timeline of symptoms.
+2. Perform a systematic assessment: Inquire about specific clinical signs:
+temperature, gait, manure consistency, respiratory rate, or other observable
+indicators Dave may have noticed.
+3. Consider environmental factors: Explore potential environmental causes such as
+pasture type, toxic plants, recent weather, or exposure to other sick animals.
+4. Identify differential diagnoses: Propose at least two plausible differential
+diagnoses based on the information gathered.
+5. Recommend a treatment plan: Suggest an appropriate treatment or management
+plan with reasoning, including any immediate actions and follow-up.
+These are the objectives your system should be configured with for this scenario. They should
+drive the structured assessment data the LLM returns alongside each conversational response.
+
+The Critical Requirement
+You're implementing this scenario, but the system must be built so that a completely
+different scenario (a nursing triage, a business negotiation, a language practice session,
+etc.) is a configuration change, not a code change. The architecture matters as much as
+the implementation.
+
+What We Need to See
+Core (Required)
+• A Django backend with a data model for scenarios. Each scenario should define (at
+minimum) a persona, setting, context, learning objectives, and evaluation criteria.
+• An API that manages a multi-turn conversation between the user and the LLM,
+operating within the configured scenario.
+• The LLM must return structured data alongside its conversational response, not just
+raw chat text. Think: which learning objectives have been touched, a current
+assessment of the learner's progress, scenario state, or similar. How you achieve this
+is up to you.
+• Conversation history management. The system needs to know what's been said.
+Depth (What we'd expect from a senior developer)
+• A thoughtful approach to managing context as conversations grow. "Send
+everything every time" is a valid starting point, but it's one you should be able to
+reason about and justify or improve on.
+
+• Resilience around LLM API integration. These services have failure modes. Your
+code should handle them gracefully.
+• Tests that show us your testing philosophy. We don't want 100% coverage for the
+sake of it. We want to see what you choose to test and how.
+• A clean, well-organised project that a new team member could pick up, understand,
+and run with on day one. Your repository should reflect how you'd deliver real work
+to a real team. We notice the things that experienced engineers do, and the things
+they don't.
+Headroom (Optional)
+This is deliberately open-ended. If you have time and inclination, extend the project with
+something you think adds genuine value. This could be anything, such as streaming
+responses, async handling, observability and logging for LLM interactions, a Django admin
+interface for scenario authoring, a more sophisticated memory or summarisation strategy,
+containerisation, an evaluation rubric system, anything that interests you really.
+We'd much rather see one well-executed enhancement than five half-finished ones.

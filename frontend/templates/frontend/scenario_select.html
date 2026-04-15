@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Select Scenario</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  </head>
+  <body class="min-h-screen bg-slate-50 text-slate-900">
+    <div class="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+      <div class="mb-8 flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-semibold tracking-tight">Select a Scenario</h1>
+          <p class="mt-1 text-sm text-slate-600">
+            Choose a learning scenario to begin your session.
+          </p>
+        </div>
+        <a
+          href="{{ dashboard_url }}"
+          class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+        >
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Dashboard
+        </a>
+      </div>
+
+      <div
+        id="alert"
+        class="mb-4 hidden rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800"
+      ></div>
+
+      <div id="loading" class="flex items-center justify-center py-12">
+        <div class="h-8 w-8 animate-spin rounded-full border-4 border-slate-300 border-t-slate-600"></div>
+      </div>
+
+      <div id="scenarios-grid" class="hidden grid gap-4 sm:grid-cols-2"></div>
+
+      <div id="empty-state" class="hidden rounded-2xl bg-white p-8 text-center shadow-sm ring-1 ring-slate-200">
+        <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <h3 class="mt-4 text-lg font-medium text-slate-900">No scenarios available</h3>
+        <p class="mt-2 text-sm text-slate-600">Check back later or contact your administrator.</p>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        var accessToken = localStorage.getItem("access");
+        var refreshToken = localStorage.getItem("refresh");
+
+        if (!accessToken) {
+          window.location.href = "{{ login_url|escapejs }}";
+          return;
+        }
+
+        function showError(message) {
+          $("#alert").text(message).removeClass("hidden");
+        }
+
+        function refreshAccessToken() {
+          return $.ajax({
+            url: "{{ token_refresh_url|default:'/api/token/refresh/'|escapejs }}",
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({ refresh: refreshToken }),
+          }).then(function (data) {
+            localStorage.setItem("access", data.access);
+            accessToken = data.access;
+            return data.access;
+          });
+        }
+
+        function apiRequest(url, options) {
+          options = options || {};
+          options.headers = options.headers || {};
+          options.headers["Authorization"] = "Bearer " + accessToken;
+
+          return $.ajax(url, options).fail(function (xhr) {
+            if (xhr.status === 401 && refreshToken) {
+              return refreshAccessToken().then(function () {
+                options.headers["Authorization"] = "Bearer " + accessToken;
+                return $.ajax(url, options);
+              });
+            }
+          });
+        }
+
+        function renderScenarios(scenarios) {
+          $("#loading").addClass("hidden");
+
+          if (!scenarios || scenarios.length === 0) {
+            $("#empty-state").removeClass("hidden");
+            return;
+          }
+
+          var $grid = $("#scenarios-grid");
+          scenarios.forEach(function (scenario) {
+            var objectivesHtml = scenario.learning_objectives
+              .map(function (obj) {
+                return '<li class="text-slate-600">' + obj.objective_id + ": " + obj.description + "</li>";
+              })
+              .join("");
+
+            var card = $('<div class="scenario-card cursor-pointer rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 transition hover:shadow-md hover:ring-slate-300">')
+              .attr("data-scenario-id", scenario.id)
+              .html(
+                '<h3 class="text-lg font-semibold text-slate-900">' + scenario.name + "</h3>" +
+                '<p class="mt-2 text-sm text-slate-600">' + scenario.setting + "</p>" +
+                '<div class="mt-4">' +
+                '<h4 class="text-xs font-medium uppercase tracking-wide text-slate-500">Learning Objectives</h4>' +
+                '<ul class="mt-2 space-y-1 text-xs">' + objectivesHtml + "</ul>" +
+                "</div>" +
+                '<div class="mt-4 flex justify-end">' +
+                '<span class="inline-flex items-center gap-1 text-sm font-medium text-slate-900">' +
+                "Start Session" +
+                '<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">' +
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />' +
+                "</svg>" +
+                "</span>" +
+                "</div>"
+              );
+            $grid.append(card);
+          });
+
+          $grid.removeClass("hidden");
+        }
+
+        function startSession(scenarioId) {
+          apiRequest("{{ sessions_api_url|escapejs }}", {
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({ scenario: scenarioId }),
+          })
+            .done(function (data) {
+              window.location.href = "/chat/" + data.id + "/";
+            })
+            .fail(function (xhr) {
+              var detail = (xhr.responseJSON && xhr.responseJSON.detail) || "Failed to create session.";
+              showError(detail);
+            });
+        }
+
+        $(document).on("click", ".scenario-card", function () {
+          var scenarioId = $(this).data("scenario-id");
+          startSession(scenarioId);
+        });
+
+        apiRequest("{{ scenarios_api_url|escapejs }}")
+          .done(function (data) {
+            renderScenarios(data);
+          })
+          .fail(function (xhr) {
+            $("#loading").addClass("hidden");
+            if (xhr.status === 401) {
+              localStorage.removeItem("access");
+              localStorage.removeItem("refresh");
+              window.location.href = "{{ login_url|escapejs }}";
+            } else {
+              showError("Failed to load scenarios. Please try again.");
+            }
+          });
+      })();
+    </script>
+  </body>
+</html>

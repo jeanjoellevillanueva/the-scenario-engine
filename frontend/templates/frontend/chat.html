@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chat Session</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <style>
+      .chat-container {
+        height: calc(100vh - 200px);
+      }
+      .message-enter {
+        animation: messageEnter 0.3s ease-out;
+      }
+      @keyframes messageEnter {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body class="min-h-screen bg-slate-50 text-slate-900">
+    <div class="mx-auto flex h-screen max-w-6xl flex-col px-4 py-4 sm:px-6 lg:px-8">
+      <!-- Header -->
+      <div class="mb-4 flex items-center justify-between">
+        <div>
+          <h1 id="scenario-name" class="text-xl font-semibold tracking-tight">Loading...</h1>
+          <p id="scenario-setting" class="text-sm text-slate-600"></p>
+        </div>
+        <div class="flex items-center gap-3">
+          <button
+            id="show-objectives"
+            class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+          >
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+            Objectives
+          </button>
+          <a
+            href="{{ scenario_select_url }}"
+            class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+          >
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back
+          </a>
+        </div>
+      </div>
+
+      <!-- Alert -->
+      <div
+        id="alert"
+        class="mb-4 hidden rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800"
+      ></div>
+
+      <!-- Main Content -->
+      <div class="flex flex-1 gap-4 overflow-hidden">
+        <!-- Chat Area -->
+        <div class="flex flex-1 flex-col rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+          <!-- Messages -->
+          <div id="messages" class="chat-container flex-1 overflow-y-auto p-4 space-y-4">
+            <div id="loading-messages" class="flex items-center justify-center py-12">
+              <div class="h-8 w-8 animate-spin rounded-full border-4 border-slate-300 border-t-slate-600"></div>
+            </div>
+          </div>
+
+          <!-- Input -->
+          <div class="border-t border-slate-200 p-4">
+            <form id="message-form" class="flex gap-3">
+              <input
+                id="message-input"
+                type="text"
+                placeholder="Type your message..."
+                class="flex-1 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200"
+                autocomplete="off"
+              />
+              <button
+                id="send-button"
+                type="submit"
+                class="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <span id="send-text">Send</span>
+                <svg id="send-icon" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+                <div id="send-spinner" class="hidden h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Objectives Panel (hidden by default on mobile) -->
+        <div id="objectives-panel" class="hidden w-80 flex-col rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 lg:flex">
+          <div class="border-b border-slate-200 p-4">
+            <h2 class="font-semibold text-slate-900">Learning Objectives</h2>
+            <p class="text-xs text-slate-500">Track your progress</p>
+          </div>
+          <div id="objectives-list" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+          <div class="border-t border-slate-200 p-4">
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-slate-600">Overall Score</span>
+              <span id="overall-score" class="font-semibold text-slate-900">0/5</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Objectives Modal (mobile) -->
+    <div id="objectives-modal" class="fixed inset-0 z-50 hidden">
+      <div class="absolute inset-0 bg-black/50" id="modal-backdrop"></div>
+      <div class="absolute inset-x-4 top-1/2 max-h-[80vh] -translate-y-1/2 overflow-hidden rounded-2xl bg-white shadow-xl sm:inset-x-auto sm:left-1/2 sm:w-full sm:max-w-md sm:-translate-x-1/2">
+        <div class="flex items-center justify-between border-b border-slate-200 p-4">
+          <h2 class="font-semibold text-slate-900">Learning Objectives</h2>
+          <button id="close-modal" class="rounded-lg p-1 hover:bg-slate-100">
+            <svg class="h-5 w-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div id="objectives-modal-list" class="max-h-[60vh] overflow-y-auto p-4 space-y-3"></div>
+        <div class="border-t border-slate-200 p-4">
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-slate-600">Overall Score</span>
+            <span id="modal-overall-score" class="font-semibold text-slate-900">0/5</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        var accessToken = localStorage.getItem("access");
+        var refreshToken = localStorage.getItem("refresh");
+        var sessionId = "{{ session_id }}";
+        var objectives = [];
+        var assessmentState = {};
+
+        if (!accessToken) {
+          window.location.href = "{{ login_url|escapejs }}";
+          return;
+        }
+
+        function showError(message) {
+          $("#alert").text(message).removeClass("hidden");
+          setTimeout(function () {
+            $("#alert").addClass("hidden");
+          }, 5000);
+        }
+
+        function refreshAccessToken() {
+          return $.ajax({
+            url: "{{ token_refresh_url|escapejs }}",
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({ refresh: refreshToken }),
+          }).then(function (data) {
+            localStorage.setItem("access", data.access);
+            accessToken = data.access;
+            return data.access;
+          });
+        }
+
+        function apiRequest(url, options) {
+          options = options || {};
+          options.headers = options.headers || {};
+          options.headers["Authorization"] = "Bearer " + accessToken;
+
+          return $.ajax(url, options).fail(function (xhr) {
+            if (xhr.status === 401 && refreshToken) {
+              return refreshAccessToken().then(function () {
+                options.headers["Authorization"] = "Bearer " + accessToken;
+                return $.ajax(url, options);
+              });
+            }
+          });
+        }
+
+        function getStatusColor(status) {
+          switch (status) {
+            case "met":
+              return "bg-emerald-100 text-emerald-800 border-emerald-200";
+            case "partial":
+              return "bg-amber-100 text-amber-800 border-amber-200";
+            default:
+              return "bg-slate-100 text-slate-600 border-slate-200";
+          }
+        }
+
+        function getStatusLabel(status) {
+          switch (status) {
+            case "met":
+              return "Met";
+            case "partial":
+              return "Partial";
+            default:
+              return "Not Yet";
+          }
+        }
+
+        function renderObjectives(targetId) {
+          var $container = $(targetId);
+          $container.empty();
+
+          objectives.forEach(function (obj) {
+            var progress = assessmentState.objective_progress && assessmentState.objective_progress[obj.objective_id];
+            var status = progress ? progress.status : "not_yet";
+            var evidence = progress ? progress.evidence : null;
+
+            var html =
+              '<div class="rounded-lg border p-3 ' + getStatusColor(status) + '">' +
+              '<div class="flex items-start justify-between gap-2">' +
+              '<div class="flex-1">' +
+              '<span class="text-xs font-semibold">' + obj.objective_id + "</span>" +
+              '<p class="mt-1 text-xs">' + obj.description + "</p>" +
+              (evidence ? '<p class="mt-2 text-xs italic opacity-75">"' + evidence + '"</p>' : "") +
+              "</div>" +
+              '<span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium">' + getStatusLabel(status) + "</span>" +
+              "</div>" +
+              "</div>";
+            $container.append(html);
+          });
+        }
+
+        function updateObjectives() {
+          renderObjectives("#objectives-list");
+          renderObjectives("#objectives-modal-list");
+          var score = assessmentState.latest_score || 0;
+          $("#overall-score, #modal-overall-score").text(score + "/5");
+        }
+
+        function addMessage(role, content, animate) {
+          var isUser = role === "user";
+          var alignClass = isUser ? "justify-end" : "justify-start";
+          var bgClass = isUser ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-900";
+          var animateClass = animate ? "message-enter" : "";
+
+          var html =
+            '<div class="flex ' + alignClass + " " + animateClass + '">' +
+            '<div class="max-w-[80%] rounded-2xl px-4 py-2.5 ' + bgClass + '">' +
+            '<p class="text-sm whitespace-pre-wrap">' + escapeHtml(content) + "</p>" +
+            "</div>" +
+            "</div>";
+
+          $("#messages").append(html);
+          scrollToBottom();
+        }
+
+        function escapeHtml(text) {
+          var div = document.createElement("div");
+          div.textContent = text;
+          return div.innerHTML;
+        }
+
+        function scrollToBottom() {
+          var messages = document.getElementById("messages");
+          messages.scrollTop = messages.scrollHeight;
+        }
+
+        function setLoading(isLoading) {
+          $("#send-button").prop("disabled", isLoading);
+          $("#message-input").prop("disabled", isLoading);
+          if (isLoading) {
+            $("#send-text").text("Sending...");
+            $("#send-icon").addClass("hidden");
+            $("#send-spinner").removeClass("hidden");
+          } else {
+            $("#send-text").text("Send");
+            $("#send-icon").removeClass("hidden");
+            $("#send-spinner").addClass("hidden");
+          }
+        }
+
+        function loadSession() {
+          apiRequest("{{ session_api_url|escapejs }}")
+            .done(function (data) {
+              $("#loading-messages").remove();
+
+              // Set scenario info
+              var scenario = data.scenario_detail;
+              $("#scenario-name").text(scenario.name);
+              $("#scenario-setting").text(scenario.setting);
+              objectives = scenario.learning_objectives || [];
+              assessmentState = data.assessment_state || {};
+
+              // Render messages
+              if (data.messages && data.messages.length > 0) {
+                data.messages.forEach(function (msg) {
+                  addMessage(msg.role, msg.content, false);
+                });
+              } else {
+                // Show welcome message
+                $("#messages").append(
+                  '<div class="text-center text-sm text-slate-500 py-8">' +
+                  '<p>Start the conversation by typing a message below.</p>' +
+                  "</div>"
+                );
+              }
+
+              updateObjectives();
+              $("#message-input").focus();
+            })
+            .fail(function (xhr) {
+              $("#loading-messages").remove();
+              if (xhr.status === 401) {
+                localStorage.removeItem("access");
+                localStorage.removeItem("refresh");
+                window.location.href = "{{ login_url|escapejs }}";
+              } else if (xhr.status === 404) {
+                showError("Session not found.");
+                setTimeout(function () {
+                  window.location.href = "{{ scenario_select_url|escapejs }}";
+                }, 2000);
+              } else {
+                showError("Failed to load session. Please try again.");
+              }
+            });
+        }
+
+        function sendMessage(content) {
+          // Remove welcome message if present
+          $("#messages .text-center").remove();
+
+          // Add user message
+          addMessage("user", content, true);
+          setLoading(true);
+
+          apiRequest("{{ messages_api_url|escapejs }}", {
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({ content: content }),
+          })
+            .done(function (data) {
+              // Add assistant message
+              addMessage("assistant", data.message.content, true);
+
+              // Update assessment state
+              if (data.assessment) {
+                assessmentState.objective_progress = data.assessment.objective_progress || {};
+                assessmentState.latest_score = data.assessment.overall_score || 0;
+                assessmentState.scenario_state = data.assessment.scenario_state;
+                updateObjectives();
+              }
+            })
+            .fail(function (xhr) {
+              var detail = (xhr.responseJSON && xhr.responseJSON.error) || "Failed to send message.";
+              showError(detail);
+            })
+            .always(function () {
+              setLoading(false);
+              $("#message-input").focus();
+            });
+        }
+
+        // Event handlers
+        $("#message-form").on("submit", function (e) {
+          e.preventDefault();
+          var content = $("#message-input").val().trim();
+          if (!content) return;
+          $("#message-input").val("");
+          sendMessage(content);
+        });
+
+        $("#show-objectives").on("click", function () {
+          $("#objectives-modal").removeClass("hidden");
+        });
+
+        $("#close-modal, #modal-backdrop").on("click", function () {
+          $("#objectives-modal").addClass("hidden");
+        });
+
+        // Initialize
+        loadSession();
+      })();
+    </script>
+  </body>
+</html>

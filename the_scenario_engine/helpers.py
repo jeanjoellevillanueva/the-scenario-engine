@@ -32,7 +32,10 @@ def _load_dotenv(dotenv_path: Path) -> None:
         os.environ.setdefault(key, value)
 
 
-def get_env(name: str, *, cast=str, required: bool = True) -> object:
+_UNSET = object()
+
+
+def get_env(name: str, *, cast=str, required: bool = True, default=_UNSET) -> object:
     """
     Get an environment variable from `.env` or the process.
     """
@@ -40,11 +43,14 @@ def get_env(name: str, *, cast=str, required: bool = True) -> object:
     _load_dotenv(base_dir / '.env')
 
     raw_value = os.environ.get(name)
-    if (raw_value is None or raw_value == '') and required:
-        raise MissingEnvironmentVariableError(
-            f'Missing required environment variable: {name}'
-        )
+
     if raw_value is None or raw_value == '':
+        if default is not _UNSET:
+            return default
+        if required:
+            raise MissingEnvironmentVariableError(
+                f'Missing required environment variable: {name}'
+            )
         return None
 
     if cast is bool:
@@ -54,4 +60,5 @@ def get_env(name: str, *, cast=str, required: bool = True) -> object:
         if normalized in {'false'}:
             return False
         raise ValueError(f'Invalid boolean for {name}: {raw_value!r}')
+
     return cast(raw_value)

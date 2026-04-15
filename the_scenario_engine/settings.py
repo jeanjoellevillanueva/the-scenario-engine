@@ -27,7 +27,9 @@ DJANGO_APPS = [
 LOCAL_APPS = [
     'core',
     'frontend',
+    'learning_sessions',
     'oauth',
+    'scenarios',
 ]
 THIRD_PARTY_APPS = [
     'rest_framework',
@@ -110,3 +112,11 @@ APPEND_SLASH = False
 GOOGLE_OAUTH_CLIENT_ID = get_env('GOOGLE_OAUTH_CLIENT_ID', required=True)
 GOOGLE_OAUTH_CLIENT_SECRET = get_env('GOOGLE_OAUTH_CLIENT_SECRET', required=True)
 GOOGLE_OAUTH_REDIRECT_URI = get_env('GOOGLE_OAUTH_REDIRECT_URI', required=True)
+
+# LLM
+ANTHROPIC_API_KEY = get_env('ANTHROPIC_API_KEY', required=False)
+ANTHROPIC_MODEL = get_env('ANTHROPIC_MODEL', required=False)
+ANTHROPIC_MAX_TOKENS = get_env('ANTHROPIC_MAX_TOKENS', default=4096, cast=int)
+ANTHROPIC_TIMEOUT = get_env('ANTHROPIC_TIMEOUT', default=60.0, cast=float)
+ANTHROPIC_MAX_RETRIES = get_env('ANTHROPIC_MAX_RETRIES', default=3, cast=int)
+ANTHROPIC_RETRY_DELAYS = get_env('ANTHROPIC_RETRY_DELAYS', default='1,2,4')
