@@ -55,7 +55,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     """
 
     email = models.EmailField(unique=True)
-    mobile_number = models.CharField(max_length=32, unique=True, blank=True)
+    mobile_number = models.CharField(
+        max_length=32,
+        unique=True,
+        blank=True,
+        null=True,
+    )
     first_name = models.CharField(max_length=150, blank=True, default='')
     last_name = models.CharField(max_length=150, blank=True, default='')
     is_email_verified = models.BooleanField(default=False)

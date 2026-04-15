@@ -5,15 +5,23 @@ from django.urls import path
 from frontend.views import AuthCompleteView
 from frontend.views import DashboardPageView
 from frontend.views import LoginPageView
+from frontend.views import RegisterPageView
 
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.views import TokenRefreshView
+
+from core.views import RegisterView
 
 urlpatterns = [
     path(
         '',
         LoginPageView.as_view(),
         name='login',
+    ),
+    path(
+        'register/',
+        RegisterPageView.as_view(),
+        name='register',
     ),
     path(
         'auth-complete/',
@@ -41,5 +49,10 @@ urlpatterns = [
     path(
         'api/oauth/',
         include('oauth.urls'),
+    ),
+    path(
+        'api/register/',
+        RegisterView.as_view(),
+        name='register_api',
     ),
 ]

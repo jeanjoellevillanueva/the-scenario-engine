@@ -16,8 +16,27 @@ class LoginPageView(TemplateView):
         context = super().get_context_data(**kwargs)
         context['dashboard_url'] = reverse_lazy('dashboard')
         context['google_login_url'] = reverse_lazy('oauth:google_login')
+        context['register_url'] = reverse_lazy('register')
         context['token_url'] = reverse_lazy('token_obtain_pair')
         context['auth_error'] = self.request.session.pop('auth_error', None)
+        return context
+
+
+class RegisterPageView(TemplateView):
+    """
+    Render the registration page.
+    """
+
+    template_name = 'frontend/register.html'
+
+    def get_context_data(self, **kwargs):
+        """
+        Provide template context for the registration page.
+        """
+        context = super().get_context_data(**kwargs)
+        context['dashboard_url'] = reverse_lazy('dashboard')
+        context['login_url'] = reverse_lazy('login')
+        context['register_api_url'] = reverse_lazy('register_api')
         return context
 
 
