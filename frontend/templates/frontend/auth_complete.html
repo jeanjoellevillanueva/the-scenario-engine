@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Completing sign in...</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="min-h-screen bg-slate-50 text-slate-900">
+    <div class="flex min-h-screen items-center justify-center">
+      <div class="text-center">
+        <div class="mb-4 text-lg font-medium">Completing sign in...</div>
+        <div class="text-sm text-slate-500">Please wait while we redirect you.</div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        var accessToken = "{{ access_token|escapejs }}";
+        var refreshToken = "{{ refresh_token|escapejs }}";
+        var dashboardUrl = "{{ dashboard_url|escapejs }}";
+        var loginUrl = "{{ login_url|escapejs }}";
+
+        if (accessToken && refreshToken) {
+          localStorage.setItem("access", accessToken);
+          localStorage.setItem("refresh", refreshToken);
+          window.location.href = dashboardUrl;
+        } else {
+          window.location.href = loginUrl;
+        }
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  </head>
+  <body class="min-h-screen bg-slate-50 text-slate-900">
+    <header class="border-b border-slate-200 bg-white">
+      <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+        <div class="text-sm font-semibold tracking-tight">Scenario Engine</div>
+        <button
+          id="logout"
+          class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-200"
+        >
+          Logout
+        </button>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+      <div class="max-w-2xl">
+        <div class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 sm:p-8">
+          <h1 class="text-2xl font-semibold tracking-tight">Dashboard</h1>
+          <p class="mt-2 text-sm text-slate-600">
+            <span class="font-medium text-slate-800">Hello,</span>
+            <span id="user-email" class="font-semibold text-slate-900">user</span>
+          </p>
+          <p class="mt-4 text-sm text-slate-600">
+            We’ll add more here later.
+          </p>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      (function () {
+        function goLogin() {
+          window.location.href = "{{ login_url|escapejs }}";
+        }
+
+        function isLoggedIn() {
+          return Boolean(localStorage.getItem("access") && localStorage.getItem("refresh"));
+        }
+
+        window.addEventListener("load", function () {
+          if (!isLoggedIn()) {
+            goLogin();
+            return;
+          }
+
+          var email = localStorage.getItem("user_email") || "user";
+          $("#user-email").text(email);
+        });
+
+        $("#logout").on("click", function () {
+          localStorage.removeItem("access");
+          localStorage.removeItem("refresh");
+          localStorage.removeItem("user_email");
+          goLogin();
+        });
+      })();
+    </script>
+  </body>
+</html>
+
