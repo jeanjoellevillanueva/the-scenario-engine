@@ -16,15 +16,15 @@
             Choose a learning scenario to begin your session.
           </p>
         </div>
-        <a
-          href="{{ dashboard_url }}"
+        <button
+          id="logout-btn"
           class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
         >
           <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
-          Dashboard
-        </a>
+          Logout
+        </button>
       </div>
 
       <div
@@ -147,6 +147,13 @@
         $(document).on("click", ".scenario-card", function () {
           var scenarioId = $(this).data("scenario-id");
           startSession(scenarioId);
+        });
+
+        $("#logout-btn").on("click", function () {
+          localStorage.removeItem("access");
+          localStorage.removeItem("refresh");
+          localStorage.removeItem("user_email");
+          window.location.href = "{{ login_url|escapejs }}";
         });
 
         apiRequest("{{ scenarios_api_url|escapejs }}")

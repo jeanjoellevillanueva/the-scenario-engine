@@ -170,8 +170,8 @@
           localStorage.setItem("refresh", data.refresh);
         }
 
-        function goDashboard() {
-          window.location.href = "{{ dashboard_url|escapejs }}";
+        function goToApp() {
+          window.location.href = "{{ redirect_url|escapejs }}";
         }
 
         $("#register-form").on("submit", function (e) {
@@ -198,7 +198,7 @@
             .done(function (data) {
               storeTokens(data);
               localStorage.setItem("user_email", email);
-              goDashboard();
+              goToApp();
             })
             .fail(function (xhr) {
               var detail =

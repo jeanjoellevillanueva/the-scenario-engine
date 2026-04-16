@@ -150,8 +150,8 @@
           localStorage.setItem("refresh", data.refresh);
         }
 
-        function goDashboard() {
-          window.location.href = "{{ dashboard_url|escapejs }}";
+        function goToApp() {
+          window.location.href = "{{ redirect_url|escapejs }}";
         }
 
         function onJwtSuccess(data, email) {
@@ -159,12 +159,12 @@
           if (email) {
             localStorage.setItem("user_email", email);
           }
-          goDashboard();
+          goToApp();
         }
 
         window.addEventListener("load", function () {
           if (localStorage.getItem("access")) {
-            goDashboard();
+            goToApp();
             return;
           }
         });

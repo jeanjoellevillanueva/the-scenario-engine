@@ -18,13 +18,13 @@
       (function () {
         var accessToken = "{{ access_token|escapejs }}";
         var refreshToken = "{{ refresh_token|escapejs }}";
-        var dashboardUrl = "{{ dashboard_url|escapejs }}";
+        var redirectUrl = "{{ redirect_url|escapejs }}";
         var loginUrl = "{{ login_url|escapejs }}";
 
         if (accessToken && refreshToken) {
           localStorage.setItem("access", accessToken);
           localStorage.setItem("refresh", refreshToken);
-          window.location.href = dashboardUrl;
+          window.location.href = redirectUrl;
         } else {
           window.location.href = loginUrl;
         }
