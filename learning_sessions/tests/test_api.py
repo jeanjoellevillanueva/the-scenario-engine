@@ -56,7 +56,7 @@ class TestSessionAPI(APITestCase):
 
         assert response.status_code == status.HTTP_201_CREATED
         assert "id" in response.data
-        assert response.data["scenario"] == str(self.scenario.id)
+        assert str(response.data["scenario"]) == str(self.scenario.id)
         assert response.data["status"] == "in_progress"
 
     def test_create_session_assigns_current_user(self):
